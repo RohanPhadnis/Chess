@@ -22,23 +22,35 @@ white_play = True
 
 while True:
     screen.blit(board.surface, [0, 0])
-    screen.blit(white_tile, [800, 0])
-    screen.blit(black_tile, [800, 400])
+    screen.blit(board.dead_surf, [800, 0])
+    board.draw_mini()
+    screen.blit(board.mini_surf, [800, 400])
     pygame.draw.line(screen, (0, 0, 0), (800, 0), (800, 800), 4)
+    pygame.draw.line(screen, (0, 0, 0), (800, 400), (1200, 400), 4)
 
     for piece in board.pieces:
         piece.calc_move()
         if piece.clicked:
+            pygame.draw.rect(screen, (200, 200, 200), (piece.pos[0] * board.size, piece.pos[1] * board.size, board.size, board.size), 5)
             for move in piece.possible_moves:
                 board.draw_move(pygame, move)
+        if piece.dead:
+            piece.draw_dead()
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             exit()
         elif event.type == MOUSEBUTTONDOWN and event.button == 1:
             for piece in board.pieces:
+                if piece.clicked and [event.pos[0] // board.size, event.pos[1] // board.size] in piece.possible_moves:
+                    piece.set_target(event.pos[0] // board.size, event.pos[1] // board.size)
+                    white_play = not white_play
+                    board.invert_board()
                 if piece.figure.collidepoint(event.pos):
-                    piece.clicked = True
+                    if (white_play and piece.side == 'white') or (not white_play and piece.side == 'black'):
+                        piece.clicked = True
                 else:
-                    piece.clicked = False
+                    if piece.clicked:
+                        board.redraw()
+                        piece.clicked = False
     pygame.display.update()

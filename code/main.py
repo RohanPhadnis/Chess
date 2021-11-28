@@ -35,14 +35,18 @@ while True:
     pygame.draw.line(screen, (0, 0, 0), (800, 400), (1200, 400), 4)
 
     for piece in board.pieces:
+        if isinstance(piece, Pawn) and piece.en_passant:
+            print(piece.pos)
         if piece.dead:
             piece.draw_dead()
         else:
             piece.calc_move()
-            if piece.clicked:
+            if piece.clicked and ((white_play and piece.side == 'white') or (not white_play and piece.side == 'black')):
                 pygame.draw.rect(screen, (200, 200, 200), (piece.pos[0] * board.size, piece.pos[1] * board.size, board.size, board.size), 5)
                 for move in piece.possible_moves:
                     board.draw_move(pygame, move)
+            else:
+                piece.clicked = False
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
@@ -51,10 +55,19 @@ while True:
             for piece in board.pieces:
                 if piece.clicked and [event.pos[0] // board.size, event.pos[1] // board.size] in piece.possible_moves:
                     piece.set_target(event.pos[0] // board.size, event.pos[1] // board.size)
+                    if white_play:
+                        for piece in white:
+                            if isinstance(piece, Pawn) and piece.en_passant:
+                                piece.en_passant = False
+                    else:
+                        for piece in black:
+                            if isinstance(piece, Pawn) and piece.en_passant:
+                                piece.en_passant = False
                     white_play = not white_play
+                    piece.clicked = False
                     board.invert_board()
                 if piece.figure.collidepoint(event.pos):
-                    if (white_play and piece.side == 'white') or (not white_play and piece.side == 'black') and not piece.dead:
+                    if ((white_play and piece.side == 'white') or (not white_play and piece.side == 'black')) and not piece.dead:
                         piece.clicked = True
                 else:
                     if piece.clicked:

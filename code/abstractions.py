@@ -271,6 +271,26 @@ class Pawn(Piece):
         if self.side == 'white':
             if self.inverted == self.board.inverted:
                 if self.inverted:
+                    pos = [7 - self.pos[0], 7 - self.pos[1]]
+                else:
+                    pos = self.pos.copy()
+                if pos[0] + 1 < 8:
+                    piece = self.board.squares[pos[0] + 1][pos[1]]
+                    if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                        move = [pos[0] + 1, pos[1] - 1]
+                        if self.inverted:
+                            self.possible_moves.append([7 - move[0], 7 - move[1]])
+                        else:
+                            self.possible_moves.append([move[0], move[1]])
+                if pos[0] - 1 >= 0:
+                    piece = self.board.squares[pos[0] - 1][pos[1]]
+                    if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                        move = [pos[0] - 1, pos[1] - 1]
+                        if self.inverted:
+                            self.possible_moves.append([7 - move[0], 7 - move[1]])
+                        else:
+                            self.possible_moves.append([move[0], move[1]])
+                if self.inverted:
                     move = [7 - self.pos[0], 7 - (self.pos[1] - 1)]
                 else:
                     move = [self.pos[0], self.pos[1] - 1]
@@ -287,6 +307,10 @@ class Pawn(Piece):
                                 piece = self.board.squares[move[0]][move[1]]
                                 if piece is None:
                                     self.possible_moves.append([self.pos[0], self.pos[1] - 2])
+                    if self.inverted:
+                        move[1] = 7 - (self.pos[1] - 1)
+                    else:
+                        move[1] = self.pos[1] - 1
                     move = [move[0] - 1, move[1]]
                     if 0 <= move[0] < 8:
                         piece = self.board.squares[move[0]][move[1]]
@@ -305,6 +329,26 @@ class Pawn(Piece):
                                 self.possible_moves.append([self.pos[0] + 1, self.pos[1] - 1])
             else:
                 if self.inverted:
+                    pos = [7 - self.pos[0], 7 - self.pos[1]]
+                else:
+                    pos = self.pos.copy()
+                if pos[0] + 1 < 8:
+                    piece = self.board.squares[pos[0] + 1][pos[1]]
+                    if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                        move = [pos[0] + 1, pos[1] + 1]
+                        if self.inverted:
+                            self.possible_moves.append([7 - move[0], 7 - move[1]])
+                        else:
+                            self.possible_moves.append([move[0], move[1]])
+                if pos[0] - 1 >= 0:
+                    piece = self.board.squares[pos[0] - 1][pos[1]]
+                    if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                        move = [pos[0] - 1, pos[1] + 1]
+                        if self.inverted:
+                            self.possible_moves.append([7 - move[0], 7 - move[1]])
+                        else:
+                            self.possible_moves.append([move[0], move[1]])
+                if self.inverted:
                     move = [7 - self.pos[0], 7 - (self.pos[1] + 1)]
                 else:
                     move = [self.pos[0], self.pos[1] + 1]
@@ -321,6 +365,10 @@ class Pawn(Piece):
                                 piece = self.board.squares[move[0]][move[1]]
                                 if piece is None:
                                     self.possible_moves.append([self.pos[0], self.pos[1] + 2])
+                    if self.inverted:
+                        move[1] = 7 - (self.pos[1] + 1)
+                    else:
+                        move[1] = self.pos[1] + 1
                     move = [move[0] - 1, move[1]]
                     if 0 <= move[0] < 8:
                         piece = self.board.squares[move[0]][move[1]]
@@ -338,6 +386,26 @@ class Pawn(Piece):
                             else:
                                 self.possible_moves.append([self.pos[0] - 1, self.pos[1] + 1])
         else:
+            if self.inverted:
+                pos = [7 - self.pos[0], 7 - self.pos[1]]
+            else:
+                pos = self.pos.copy()
+            if pos[0] + 1 < 8:
+                piece = self.board.squares[pos[0] + 1][pos[1]]
+                if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                    move = [pos[0] + 1, pos[1] + 1]
+                    if self.inverted:
+                        self.possible_moves.append([7 - move[0], 7 - move[1]])
+                    else:
+                        self.possible_moves.append([move[0], move[1]])
+            if pos[0] - 1 >= 0:
+                piece = self.board.squares[pos[0] - 1][pos[1]]
+                if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                    move = [pos[0] - 1, pos[1]]
+                    if self.inverted:
+                        self.possible_moves.append([7 - move[0], 7 - move[1]])
+                    else:
+                        self.possible_moves.append([move[0], move[1]])
             if self.inverted == self.board.inverted:
                 if self.inverted:
                     move = [7 - self.pos[0], 7 - (self.pos[1] + 1)]
@@ -356,6 +424,10 @@ class Pawn(Piece):
                                 piece = self.board.squares[move[0]][move[1]]
                                 if piece is None:
                                     self.possible_moves.append([self.pos[0], self.pos[1] + 2])
+                    if self.inverted:
+                        move[1] = 7 - (self.pos[1] + 1)
+                    else:
+                        move[1] = self.pos[1] + 1
                     move = [move[0] - 1, move[1]]
                     if 0 <= move[0] < 8:
                         piece = self.board.squares[move[0]][move[1]]
@@ -374,6 +446,26 @@ class Pawn(Piece):
                                 self.possible_moves.append([self.pos[0] + 1, self.pos[1] + 1])
             else:
                 if self.inverted:
+                    pos = [7 - self.pos[0], 7 - self.pos[1]]
+                else:
+                    pos = self.pos.copy()
+                if pos[0] + 1 < 8:
+                    piece = self.board.squares[pos[0] + 1][pos[1]]
+                    if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                        move = [pos[0] + 1, pos[1] - 1]
+                        if self.inverted:
+                            self.possible_moves.append([7 - move[0], 7 - move[1]])
+                        else:
+                            self.possible_moves.append([move[0], move[1]])
+                if pos[0] - 1 >= 0:
+                    piece = self.board.squares[pos[0] - 1][pos[1]]
+                    if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
+                        move = [pos[0] - 1, pos[1]]
+                        if self.inverted:
+                            self.possible_moves.append([7 - move[0], 7 - (move[1] - 1)])
+                        else:
+                            self.possible_moves.append([move[0], move[1] - 1])
+                if self.inverted:
                     move = [7 - self.pos[0], 7 - (self.pos[1] - 1)]
                 else:
                     move = [self.pos[0], self.pos[1] - 1]
@@ -390,6 +482,10 @@ class Pawn(Piece):
                                 piece = self.board.squares[move[0]][move[1]]
                                 if piece is None:
                                     self.possible_moves.append([self.pos[0], self.pos[1] - 2])
+                    if self.inverted:
+                        move[1] = 7 - (self.pos[1] - 1)
+                    else:
+                        move[1] = self.pos[1] - 1
                     move = [move[0] - 1, move[1]]
                     if 0 <= move[0] < 8:
                         piece = self.board.squares[move[0]][move[1]]
@@ -409,12 +505,12 @@ class Pawn(Piece):
         self.possible_moves = [move for move in self.possible_moves if 0 <= move[0] < 8 and 0 <= move[1] < 8]
 
     def set_target(self, x, y):
-        super().set_target(x, y)
-        dist = self.dist_calc(x, y, self.pos[0], self.pos[1])
-        if dist == 2:
+        if abs(y - self.pos[1]) == 2:
             self.en_passant = True
         else:
             self.en_passant = False
+        print(self.en_passant)
+        super().set_target(x, y)
 
 
 class Knight(Piece):

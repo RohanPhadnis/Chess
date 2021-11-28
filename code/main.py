@@ -1,3 +1,9 @@
+# todo: special moves (castle, en passant, promotion)
+# todo: draw detection, check detection, checkmate detection
+# todo: cloud deployment
+# todo: ML chess
+
+
 import pygame
 from pygame.locals import *
 from abstractions import *
@@ -29,13 +35,14 @@ while True:
     pygame.draw.line(screen, (0, 0, 0), (800, 400), (1200, 400), 4)
 
     for piece in board.pieces:
-        piece.calc_move()
-        if piece.clicked:
-            pygame.draw.rect(screen, (200, 200, 200), (piece.pos[0] * board.size, piece.pos[1] * board.size, board.size, board.size), 5)
-            for move in piece.possible_moves:
-                board.draw_move(pygame, move)
         if piece.dead:
             piece.draw_dead()
+        else:
+            piece.calc_move()
+            if piece.clicked:
+                pygame.draw.rect(screen, (200, 200, 200), (piece.pos[0] * board.size, piece.pos[1] * board.size, board.size, board.size), 5)
+                for move in piece.possible_moves:
+                    board.draw_move(pygame, move)
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
@@ -47,7 +54,7 @@ while True:
                     white_play = not white_play
                     board.invert_board()
                 if piece.figure.collidepoint(event.pos):
-                    if (white_play and piece.side == 'white') or (not white_play and piece.side == 'black'):
+                    if (white_play and piece.side == 'white') or (not white_play and piece.side == 'black') and not piece.dead:
                         piece.clicked = True
                 else:
                     if piece.clicked:

@@ -1,3 +1,4 @@
+import math
 import random
 from abc import ABC, abstractmethod
 
@@ -257,28 +258,163 @@ class Pawn(Piece):
 
     def __init__(self, pygame, x, y, side, board):
         super().__init__(pygame, x, y, 'pawn', side, 1, board)
+        self.en_passant = False
+        self.dist_calc = lambda x1, y1, x2, y2: math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
+
+    def move(self):
+        if abs(self.target_pos[1] - self.pos[1]) == 2 and self.num_moves == 0:
+            self.en_passant = True
+        super().move()
 
     def calc_move(self):
         self.possible_moves = []
         if self.side == 'white':
             if self.inverted == self.board.inverted:
-                self.possible_moves.append([self.pos[0], self.pos[1] - 1])
-                if self.num_moves == 0:
-                    self.possible_moves.append([self.pos[0], self.pos[1] - 2])
+                if self.inverted:
+                    move = [7 - self.pos[0], 7 - (self.pos[1] - 1)]
+                else:
+                    move = [self.pos[0], self.pos[1] - 1]
+                if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                    piece = self.board.squares[move[0]][move[1]]
+                    if piece is None:
+                        self.possible_moves.append([self.pos[0], self.pos[1] - 1])
+                        if self.num_moves == 0:
+                            if self.inverted:
+                                move = [7 - self.pos[0], 7 - (self.pos[1] - 2)]
+                            else:
+                                move = [self.pos[0], self.pos[1] - 2]
+                            if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                                piece = self.board.squares[move[0]][move[1]]
+                                if piece is None:
+                                    self.possible_moves.append([self.pos[0], self.pos[1] - 2])
+                    move = [move[0] - 1, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] - 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] - 1])
+                    move = [move[0] + 2, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] - 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] - 1])
             else:
-                self.possible_moves.append([self.pos[0], self.pos[1] + 1])
-                if self.num_moves == 0:
-                    self.possible_moves.append([self.pos[0], self.pos[1] + 2])
+                if self.inverted:
+                    move = [7 - self.pos[0], 7 - (self.pos[1] + 1)]
+                else:
+                    move = [self.pos[0], self.pos[1] + 1]
+                if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                    piece = self.board.squares[move[0]][move[1]]
+                    if piece is None:
+                        self.possible_moves.append([self.pos[0], self.pos[1] + 1])
+                        if self.num_moves == 0:
+                            if self.inverted:
+                                move = [7 - self.pos[0], 7 - (self.pos[1] + 2)]
+                            else:
+                                move = [self.pos[0], self.pos[1] + 2]
+                            if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                                piece = self.board.squares[move[0]][move[1]]
+                                if piece is None:
+                                    self.possible_moves.append([self.pos[0], self.pos[1] + 2])
+                    move = [move[0] - 1, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] + 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] + 1])
+                    move = [move[0] + 2, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] + 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] + 1])
         else:
             if self.inverted == self.board.inverted:
-                self.possible_moves.append([self.pos[0], self.pos[1] + 1])
-                if self.num_moves == 0:
-                    self.possible_moves.append([self.pos[0], self.pos[1] + 2])
+                if self.inverted:
+                    move = [7 - self.pos[0], 7 - (self.pos[1] + 1)]
+                else:
+                    move = [self.pos[0], self.pos[1] + 1]
+                if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                    piece = self.board.squares[move[0]][move[1]]
+                    if piece is None:
+                        self.possible_moves.append([self.pos[0], self.pos[1] + 1])
+                        if self.num_moves == 0:
+                            if self.inverted:
+                                move = [7 - self.pos[0], 7 - (self.pos[1] + 2)]
+                            else:
+                                move = [self.pos[0], self.pos[1] + 2]
+                            if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                                piece = self.board.squares[move[0]][move[1]]
+                                if piece is None:
+                                    self.possible_moves.append([self.pos[0], self.pos[1] + 2])
+                    move = [move[0] - 1, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] + 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] + 1])
+                    move = [move[0] + 2, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] + 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] + 1])
             else:
-                self.possible_moves.append([self.pos[0], self.pos[1] - 1])
-                if self.num_moves == 0:
-                    self.possible_moves.append([self.pos[0], self.pos[1] - 2])
+                if self.inverted:
+                    move = [7 - self.pos[0], 7 - (self.pos[1] - 1)]
+                else:
+                    move = [self.pos[0], self.pos[1] - 1]
+                if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                    piece = self.board.squares[move[0]][move[1]]
+                    if piece is None:
+                        self.possible_moves.append([self.pos[0], self.pos[1] - 1])
+                        if self.num_moves == 0:
+                            if self.inverted:
+                                move = [7 - self.pos[0], 7 - (self.pos[1] - 2)]
+                            else:
+                                move = [self.pos[0], self.pos[1] - 2]
+                            if 0 <= move[0] < 8 and 0 <= move[1] < 8:
+                                piece = self.board.squares[move[0]][move[1]]
+                                if piece is None:
+                                    self.possible_moves.append([self.pos[0], self.pos[1] - 2])
+                    move = [move[0] - 1, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] - 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] - 1])
+                    move = [move[0] + 2, move[1]]
+                    if 0 <= move[0] < 8:
+                        piece = self.board.squares[move[0]][move[1]]
+                        if piece is not None and piece.side != self.side:
+                            if self.inverted:
+                                self.possible_moves.append([self.pos[0] - 1, self.pos[1] - 1])
+                            else:
+                                self.possible_moves.append([self.pos[0] + 1, self.pos[1] - 1])
         self.possible_moves = [move for move in self.possible_moves if 0 <= move[0] < 8 and 0 <= move[1] < 8]
+
+    def set_target(self, x, y):
+        super().set_target(x, y)
+        dist = self.dist_calc(x, y, self.pos[0], self.pos[1])
+        if dist == 2:
+            self.en_passant = True
+        else:
+            self.en_passant = False
 
 
 class Knight(Piece):
@@ -353,10 +489,18 @@ class King(Piece):
 
     def calc_move(self):
         self.possible_moves = []
+        moves = []
         x, y = self.pos
         xs, ys = [x - 1, x, x + 1], [y - 1, y, y + 1]
         xs, ys = [n for n in xs if 0 <= n < 8], [n for n in ys if 0 <= n < 8]
         for i in xs:
             for j in ys:
                 if not (i == x and j == y):
-                    self.possible_moves.append([i, j])
+                    moves.append([i, j])
+        for i in range(len(moves)):
+            move = [moves[i][0], moves[i][1]]
+            if self.inverted:
+                move = [7 - move[0], 7 - move[1]]
+            piece = self.board.squares[move[0]][move[1]]
+            if piece is None or piece.side != self.side:
+                self.possible_moves.append(moves[i])

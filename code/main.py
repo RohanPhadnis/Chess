@@ -21,6 +21,7 @@ black = [Pawn(pygame, x, 1, 'black', board) for x in range(8)] + \
         [King(pygame, 4, 0, 'black', board), Queen(pygame, 3, 0, 'black', board), Rook(pygame, 0, 0, 'black', board),
          Rook(pygame, 7, 0, 'black', board), Knight(pygame, 6, 0, 'black', board), Knight(pygame, 1, 0, 'black', board),
          Bishop(pygame, 2, 0, 'black', board), Bishop(pygame, 5, 0, 'black', board)]
+# white[0].debug = True
 white_tile = pygame.transform.scale(pygame.image.load('../sprites/board/white_tile.png'), [400, 400])
 black_tile = pygame.transform.scale(pygame.image.load('../sprites/board/black_tile.png'), [400, 400])
 white_play = True
@@ -35,8 +36,6 @@ while True:
     pygame.draw.line(screen, (0, 0, 0), (800, 400), (1200, 400), 4)
 
     for piece in board.pieces:
-        if isinstance(piece, Pawn) and piece.en_passant:
-            print(piece.pos)
         if piece.dead:
             piece.draw_dead()
         else:
@@ -56,11 +55,11 @@ while True:
                 if piece.clicked and [event.pos[0] // board.size, event.pos[1] // board.size] in piece.possible_moves:
                     piece.set_target(event.pos[0] // board.size, event.pos[1] // board.size)
                     if white_play:
-                        for piece in white:
+                        for piece in black:
                             if isinstance(piece, Pawn) and piece.en_passant:
                                 piece.en_passant = False
                     else:
-                        for piece in black:
+                        for piece in white:
                             if isinstance(piece, Pawn) and piece.en_passant:
                                 piece.en_passant = False
                     white_play = not white_play

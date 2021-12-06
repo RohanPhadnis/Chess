@@ -13,6 +13,7 @@ screen = pygame.display.set_mode((1200, 800))
 pygame.display.set_caption('chess')
 
 board = Board(pygame)
+test_board = TestBoard()
 white = [Pawn(pygame, x, 6, 'white', board) for x in range(8)] + \
         [King(pygame, 4, 7, 'white', board), Queen(pygame, 3, 7, 'white', board), Rook(pygame, 0, 7, 'white', board),
          Rook(pygame, 7, 7, 'white', board), Knight(pygame, 6, 7, 'white', board), Knight(pygame, 1, 7, 'white', board),
@@ -21,11 +22,14 @@ black = [Pawn(pygame, x, 1, 'black', board) for x in range(8)] + \
         [King(pygame, 4, 0, 'black', board), Queen(pygame, 3, 0, 'black', board), Rook(pygame, 0, 0, 'black', board),
          Rook(pygame, 7, 0, 'black', board), Knight(pygame, 6, 0, 'black', board), Knight(pygame, 1, 0, 'black', board),
          Bishop(pygame, 2, 0, 'black', board), Bishop(pygame, 5, 0, 'black', board)]
-# white[0].debug = True
+# white[3].debug = True
 white_tile = pygame.transform.scale(pygame.image.load('../sprites/board/white_tile.png'), [400, 400])
 black_tile = pygame.transform.scale(pygame.image.load('../sprites/board/black_tile.png'), [400, 400])
 white_play = True
-
+board.calculate()
+game = [board.encode().copy()]
+white_count = {'pawn': 8, 'knight': 2, 'bishop': 2, 'rook': 2, 'queen': 1, 'king': 1}
+black_count = {'pawn': 8, 'knight': 2, 'bishop': 2, 'rook': 2, 'queen': 1, 'king': 1}
 
 while True:
     screen.blit(board.surface, [0, 0])
@@ -39,7 +43,6 @@ while True:
         if piece.dead:
             piece.draw_dead()
         else:
-            piece.calc_move()
             if piece.clicked and ((white_play and piece.side == 'white') or (not white_play and piece.side == 'black')):
                 pygame.draw.rect(screen, (200, 200, 200), (piece.pos[0] * board.size, piece.pos[1] * board.size, board.size, board.size), 5)
                 for move in piece.possible_moves:
@@ -65,6 +68,12 @@ while True:
                     white_play = not white_play
                     piece.clicked = False
                     board.invert_board()
+                    layout = board.encode().copy()
+                    board.legalize(test_board.main(layout, white_play, board.inverted))
+                    if game.count(layout) == 3:
+                        print('draw!')
+                    else:
+                        game.append(layout)
                 if piece.figure.collidepoint(event.pos):
                     if ((white_play and piece.side == 'white') or (not white_play and piece.side == 'black')) and not piece.dead:
                         piece.clicked = True

@@ -1,6 +1,93 @@
-import math
 import random
 from abc import ABC, abstractmethod
+
+
+class Side:
+
+    def __init__(self, color, board, pygame):
+        self.color = color
+        self.board = board
+        self.pieces = [Pawn(pygame, x, 6, self.color, board) for x in range(8)] + \
+        [King(pygame, 4, 7, self.color, board), Queen(pygame, 3, 7, self.color, self.board), Rook(pygame, 0, 7, self.color, self.board),
+         Rook(pygame, 7, 7, self.color, self.board), Knight(pygame, 6, 7, self.color, self.board), Knight(pygame, 1, 7, self.color, self.board),
+         Bishop(pygame, 2, 7, self.color, self.board), Bishop(pygame, 5, 7, self.color, self.board)]
+        self.piece_count = {'pawn': 8, 'knight': 2, 'bishop': 2, 'rook': 2, 'queen': 1, 'king': 1}
+
+
+class TestBoard:
+
+    def __init__(self):
+        self.layout = []
+        self.squares = [[None for _ in range(8)] for _ in range(8)]
+        self.map = {1: Pawn, 2: Knight, 3: Bishop, 4: Rook, 5: Queen, 6: King}
+        self.white_play = False
+        self.pieces = []
+        self.inverted = False
+        self.piece_inverted = False
+        self.white_king = []
+        self.black_king = []
+
+    def calibrate(self, current_layout):
+        self.pieces = []
+        self.layout = current_layout
+        for x in range(len(self.layout)):
+            for y in range(len(self.layout[x])):
+                if self.layout[x][y][0] == 0:
+                    self.squares[x][y] = None
+                elif self.layout[x][y][0] == 1:
+                    if self.layout[x][y][1] == 6:
+                        self.white_king = [x, y]
+                    self.squares[x][y] = self.map[self.layout[x][y][1]](None, x, y, 'white', self)
+                    self.pieces.append(self.squares[x][y])
+                else:
+                    if self.layout[x][y][1] == 6:
+                        self.black_king = [x, y]
+                    self.squares[x][y] = self.map[self.layout[x][y][1]](None, x, y, 'black', self)
+                    self.pieces.append(self.squares[x][y])
+
+    def calculate(self):
+        output = {}
+        if self.white_play:
+            for piece in self.pieces:
+                if piece.side == 'white':
+                    moves = []
+                    piece.calc_move()
+                    for move in piece.possible_moves:
+                        piece.set_target(move[0], move[1])
+                        opp_moves = []
+                        for piece2 in self.pieces:
+                            if piece2.side == 'black':
+                                print(piece2)
+                                piece2.calc_move()
+                                opp_moves += piece2.possible_moves
+                        if self.white_king not in opp_moves:
+                            moves.append(move)
+                            self.calibrate(self.layout)
+                    output[(piece.pos[0], piece.pos[1])] = moves.copy()
+        else:
+            for piece in self.pieces:
+                if piece.side == 'black':
+                    print(piece)
+                    moves = []
+                    piece.calc_move()
+                    for move in piece.possible_moves:
+                        piece.set_target(move[0], move[1])
+                        opp_moves = []
+                        for piece2 in self.pieces:
+                            if piece2.side == 'white':
+                                piece2.calc_move()
+                                opp_moves += piece2.possible_moves
+                        if self.black_king not in opp_moves:
+                            moves.append(move)
+                            self.calibrate(self.layout)
+                    output[(piece.pos[0], piece.pos[1])] = moves.copy()
+        return output.copy()
+
+    def main(self, current_layout, white_play, inverted):
+        self.white_play = white_play
+        self.inverted = inverted
+        self.calibrate(current_layout)
+        return self.calculate()
 
 
 class Board:
@@ -27,6 +114,12 @@ class Board:
         self.mini_surf = pygame.Surface([self.size * 4, self.size * 4])
         self.dead_surf = pygame.Surface([self.size * 4, self.size * 4])
         self.dead_surf.blit(self.mini_blank, [0, 0])
+        # self.white = [piece for piece in self.pieces if piece.side == 'white']
+        # self.black = [piece for piece in self.pieces if piece.side == 'black']
+        self.white_moves = []
+        self.black_moves = []
+        self.illegal_white_moves = []
+        self.illegal_black_moves = []
 
     def add_piece(self, piece):
         self.pieces.append(piece)
@@ -70,15 +163,48 @@ class Board:
                     else:
                         self.mini_surf.blit(y.mini_img, [y.pos[0] * self.size // 2, y.pos[1] * self.size // 2])
 
+    def calculate(self):
+        for piece in self.pieces:
+            piece.calc_move()
+
+    def legalize(self, moves: dict):
+        for key, val in moves.items():
+            piece = self.squares[key[0], key[1]]
+            if piece.inverted:
+                for move in val:
+                    piece.possible_moves.append([7 - move[0], 7 - move[1]])
+            else:
+                for move in val:
+                    piece.possible_moves.append([move[0], move[1]])
+
+    def encode(self):
+        output = []
+        for row in self.squares:
+            r = []
+            for piece in row:
+                if piece is None:
+                    r.append([0, 0])
+                elif piece.side == 'white':
+                    r.append([1, piece.code])
+                else:
+                    r.append([2, piece.code])
+            output.append(r.copy())
+        return output
+
 
 class Piece(ABC):
 
-    def __init__(self, pygame, x, y, name, side, point, board):
+    def __init__(self, pygame, x, y, name, side, point, code, board):
         self.name = name
         self.side = side
         self.board = board
-        self.image = pygame.transform.scale(pygame.image.load('../sprites/{}/{}.png'.format(self.side, self.name)), [self.board.size, self.board.size])
-        self.mini_img = pygame.transform.scale(self.image, [self.board.size//2, self.board.size//2])
+        if pygame is None:
+            self.test = True
+        else:
+            self.test = False
+        if pygame is not None:
+            self.image = pygame.transform.scale(pygame.image.load('../sprites/{}/{}.png'.format(self.side, self.name)), [self.board.size, self.board.size])
+            self.mini_img = pygame.transform.scale(self.image, [self.board.size//2, self.board.size//2])
         self.point = point
         self.pos = [x, y]
         self.initial_pos = [x, y]
@@ -88,19 +214,22 @@ class Piece(ABC):
         self.figure = None
         self.possible_moves = []
         self.clicked = False
-        self.init()
-        self.draw()
+        if pygame is not None:
+            self.init()
+            self.draw()
         self.dead = False
+        self.code = code
 
     @abstractmethod
     def calc_move(self):
         pass
 
     def move(self):
-        if (self.pos[0] + self.pos[1]) % 2 == 0:
-            self.board.surface.blit(self.board.white_tile, [self.pos[0] * self.board.size, self.pos[1] * self.board.size])
-        else:
-            self.board.surface.blit(self.board.black_tile, [self.pos[0] * self.board.size, self.pos[1] * self.board.size])
+        if not self.test:
+            if (self.pos[0] + self.pos[1]) % 2 == 0:
+                self.board.surface.blit(self.board.white_tile, [self.pos[0] * self.board.size, self.pos[1] * self.board.size])
+            else:
+                self.board.surface.blit(self.board.black_tile, [self.pos[0] * self.board.size, self.pos[1] * self.board.size])
         if self.inverted:
             piece = self.board.squares[7 - self.target_pos[0]][7 - self.target_pos[1]]
             if piece is not None:
@@ -115,7 +244,8 @@ class Piece(ABC):
             self.board.squares[self.pos[0]][self.pos[1]] = None
         self.pos = self.target_pos.copy()
         self.num_moves += 1
-        self.draw()
+        if not self.test:
+            self.draw()
 
     def draw_dead(self):
         self.board.dead_surf.blit(self.mini_img, [self.initial_pos[0] * self.board.size // 2, self.initial_pos[1] * self.board.size // 2])
@@ -133,7 +263,8 @@ class Piece(ABC):
     def die(self):
         self.pos = [-1, -1]
         self.dead = True
-        self.board.redraw()
+        if not self.test:
+            self.board.redraw()
 
     def calc_trajectory(self, path):
         output = []
@@ -257,7 +388,7 @@ class Piece(ABC):
 class Pawn(Piece):
 
     def __init__(self, pygame, x, y, side, board):
-        super().__init__(pygame, x, y, 'pawn', side, 1, board)
+        super().__init__(pygame, x, y, 'pawn', side, 1, 1, board)
         self.en_passant = False
         self.kill_moves = {}
         self.debug = False
@@ -281,7 +412,10 @@ class Pawn(Piece):
                     if self.debug and piece is not None and isinstance(piece, Pawn):
                         print(piece.en_passant)
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] + 1, pos[1] - 1]
+                        if self.inverted:
+                            move = [pos[0] + 1, pos[1] + 1]
+                        else:
+                            move = [pos[0] + 1, pos[1] - 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - move[1]])
@@ -292,7 +426,10 @@ class Pawn(Piece):
                     if self.debug and piece is not None and isinstance(piece, Pawn):
                         print(piece.en_passant)
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] - 1, pos[1] - 1]
+                        if self.inverted:
+                            move = [pos[0] - 1, pos[1] + 1]
+                        else:
+                            move = [pos[0] - 1, pos[1] - 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - move[1]])
@@ -345,7 +482,10 @@ class Pawn(Piece):
                     if self.debug and piece is not None and isinstance(piece, Pawn):
                         print(piece.en_passant)
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] + 1, pos[1] + 1]
+                        if self.inverted:
+                            move = [pos[0] + 1, pos[1] - 1]
+                        else:
+                            move = [pos[0] + 1, pos[1] + 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - move[1]])
@@ -356,7 +496,10 @@ class Pawn(Piece):
                     if self.debug and piece is not None and isinstance(piece, Pawn):
                         print(piece.en_passant)
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] - 1, pos[1] + 1]
+                        if self.inverted:
+                            move = [pos[0] - 1, pos[1] - 1]
+                        else:
+                            move = [pos[0] - 1, pos[1] + 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - move[1]])
@@ -408,7 +551,10 @@ class Pawn(Piece):
                 if pos[0] + 1 < 8:
                     piece = self.board.squares[pos[0] + 1][pos[1]]
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] + 1, pos[1] + 1]
+                        if self.inverted:
+                            move = [pos[0] + 1, pos[1] - 1]
+                        else:
+                            move = [pos[0] + 1, pos[1] + 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - move[1]])
@@ -417,7 +563,10 @@ class Pawn(Piece):
                 if pos[0] - 1 >= 0:
                     piece = self.board.squares[pos[0] - 1][pos[1]]
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] - 1, pos[1]]
+                        if self.inverted:
+                            move = [pos[0] - 1, pos[1] - 1]
+                        else:
+                            move = [pos[0] - 1, pos[1] + 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - move[1]])
@@ -468,7 +617,10 @@ class Pawn(Piece):
                 if pos[0] + 1 < 8:
                     piece = self.board.squares[pos[0] + 1][pos[1]]
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] + 1, pos[1] - 1]
+                        if self.inverted:
+                            move = [pos[0] + 1, pos[1] + 1]
+                        else:
+                            move = [pos[0] + 1, pos[1] - 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - move[1]])
@@ -477,7 +629,10 @@ class Pawn(Piece):
                 if pos[0] - 1 >= 0:
                     piece = self.board.squares[pos[0] - 1][pos[1]]
                     if piece is not None and piece.side != self.side and isinstance(piece, Pawn) and piece.en_passant:
-                        move = [pos[0] - 1, pos[1]]
+                        if self.inverted:
+                            move = [pos[0] - 1, pos[1] + 1]
+                        else:
+                            move = [pos[0] - 1, pos[1] - 1]
                         self.kill_moves[len(self.possible_moves)] = piece
                         if self.inverted:
                             self.possible_moves.append([7 - move[0], 7 - (move[1] - 1)])
@@ -536,7 +691,7 @@ class Pawn(Piece):
 class Knight(Piece):
 
     def __init__(self, pygame, x, y, side, board):
-        super().__init__(pygame, x, y, 'horse', side, 3, board)
+        super().__init__(pygame, x, y, 'horse', side, 3, 2, board)
 
     def calc_move(self):
         self.possible_moves = []
@@ -574,7 +729,7 @@ class Knight(Piece):
 class Bishop(Piece):
 
     def __init__(self, pygame, x, y, side, board):
-        super().__init__(pygame, x, y, 'bishop', side, 3, board)
+        super().__init__(pygame, x, y, 'bishop', side, 3, 3, board)
 
     def calc_move(self):
         self.possible_moves = self.calc_trajectory('dg').copy()
@@ -583,7 +738,7 @@ class Bishop(Piece):
 class Rook(Piece):
 
     def __init__(self, pygame, x, y, side, board):
-        super().__init__(pygame, x, y, 'rook', side, 5, board)
+        super().__init__(pygame, x, y, 'rook', side, 5, 4, board)
 
     def calc_move(self):
         self.possible_moves = self.calc_trajectory('vt').copy() + self.calc_trajectory('hz').copy()
@@ -592,7 +747,7 @@ class Rook(Piece):
 class Queen(Piece):
 
     def __init__(self, pygame, x, y, side, board):
-        super().__init__(pygame, x, y, 'queen', side, 9, board)
+        super().__init__(pygame, x, y, 'queen', side, 9, 5, board)
 
     def calc_move(self):
         self.possible_moves = self.calc_trajectory('vt').copy() + self.calc_trajectory('hz').copy() + self.calc_trajectory('dg').copy()
@@ -601,7 +756,7 @@ class Queen(Piece):
 class King(Piece):
 
     def __init__(self, pygame, x, y, side, board):
-        super().__init__(pygame, x, y, 'king', side, 10000, board)
+        super().__init__(pygame, x, y, 'king', side, 10000, 6, board)
 
     def calc_move(self):
         self.possible_moves = []

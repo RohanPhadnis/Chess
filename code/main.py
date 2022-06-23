@@ -1,84 +1,45 @@
-# todo: special moves (castle, en passant, promotion)
-# todo: draw detection, check detection, checkmate detection
-# todo: cloud deployment
-# todo: ML chess
-
-
-import pygame
-from pygame.locals import *
 from abstractions import *
 
 pygame.init()
 screen = pygame.display.set_mode((1200, 800))
-pygame.display.set_caption('chess')
+pygame.display.set_caption('Chess')
 
-board = Board(pygame)
-test_board = TestBoard()
-white = [Pawn(pygame, x, 6, 'white', board) for x in range(8)] + \
-        [King(pygame, 4, 7, 'white', board), Queen(pygame, 3, 7, 'white', board), Rook(pygame, 0, 7, 'white', board),
-         Rook(pygame, 7, 7, 'white', board), Knight(pygame, 6, 7, 'white', board), Knight(pygame, 1, 7, 'white', board),
-         Bishop(pygame, 2, 7, 'white', board), Bishop(pygame, 5, 7, 'white', board)]
-black = [Pawn(pygame, x, 1, 'black', board) for x in range(8)] + \
-        [King(pygame, 4, 0, 'black', board), Queen(pygame, 3, 0, 'black', board), Rook(pygame, 0, 0, 'black', board),
-         Rook(pygame, 7, 0, 'black', board), Knight(pygame, 6, 0, 'black', board), Knight(pygame, 1, 0, 'black', board),
-         Bishop(pygame, 2, 0, 'black', board), Bishop(pygame, 5, 0, 'black', board)]
-# white[3].debug = True
+board = Board(screen)
+board.calc_moves()
+turn = 'white'
+selected = None
 white_tile = pygame.transform.scale(pygame.image.load('../sprites/board/white_tile.png'), [400, 400])
 black_tile = pygame.transform.scale(pygame.image.load('../sprites/board/black_tile.png'), [400, 400])
-white_play = True
-board.calculate()
-game = [board.encode().copy()]
-white_count = {'pawn': 8, 'knight': 2, 'bishop': 2, 'rook': 2, 'queen': 1, 'king': 1}
-black_count = {'pawn': 8, 'knight': 2, 'bishop': 2, 'rook': 2, 'queen': 1, 'king': 1}
 
 while True:
-    screen.blit(board.surface, [0, 0])
-    screen.blit(board.dead_surf, [800, 0])
-    board.draw_mini()
-    screen.blit(board.mini_surf, [800, 400])
-    pygame.draw.line(screen, (0, 0, 0), (800, 0), (800, 800), 4)
-    pygame.draw.line(screen, (0, 0, 0), (800, 400), (1200, 400), 4)
-
-    for piece in board.pieces:
-        if piece.dead:
-            piece.draw_dead()
-        else:
-            if piece.clicked and ((white_play and piece.side == 'white') or (not white_play and piece.side == 'black')):
-                pygame.draw.rect(screen, (200, 200, 200), (piece.pos[0] * board.size, piece.pos[1] * board.size, board.size, board.size), 5)
-                for move in piece.possible_moves:
-                    board.draw_move(pygame, move)
-            else:
-                piece.clicked = False
+    board.draw()
+    if selected is not None:
+        selected.draw_moves()
     for event in pygame.event.get():
         if event.type == QUIT:
             pygame.quit()
             exit()
         elif event.type == MOUSEBUTTONDOWN and event.button == 1:
-            for piece in board.pieces:
-                if piece.clicked and [event.pos[0] // board.size, event.pos[1] // board.size] in piece.possible_moves:
-                    piece.set_target(event.pos[0] // board.size, event.pos[1] // board.size)
-                    if white_play:
-                        for piece in black:
-                            if isinstance(piece, Pawn) and piece.en_passant:
-                                piece.en_passant = False
+            if selected is None:
+                for piece in board.pieces:
+                    if piece.rect.collidepoint(event.pos) and piece.color == turn and piece.alive and not (type(piece) == Pawn and piece.promoted):
+                        selected = piece
+                        break
+            else:
+                pos = [event.pos[0] // board.scale, event.pos[1] // board.scale]
+                if pos in selected.possible_moves:
+                    # todo: move method to commit to move
+                    selected.move(pos)
+                    if turn == 'white':
+                        turn = 'black'
                     else:
-                        for piece in white:
-                            if isinstance(piece, Pawn) and piece.en_passant:
-                                piece.en_passant = False
-                    white_play = not white_play
-                    piece.clicked = False
-                    board.invert_board()
-                    layout = board.encode().copy()
-                    board.legalize(test_board.main(layout, white_play, board.inverted))
-                    if game.count(layout) == 3:
-                        print('draw!')
-                    else:
-                        game.append(layout)
-                if piece.figure.collidepoint(event.pos):
-                    if ((white_play and piece.side == 'white') or (not white_play and piece.side == 'black')) and not piece.dead:
-                        piece.clicked = True
+                        turn = 'white'
+                    board.calc_moves()
+                    selected = None
                 else:
-                    if piece.clicked:
-                        board.redraw()
-                        piece.clicked = False
+                    selected = None
+            if board.promote is not None:
+                for index, button in enumerate(board.promo_buttons):
+                    if button.rect.collidepoint(event.pos):
+                        board.promotion(index)
     pygame.display.update()
